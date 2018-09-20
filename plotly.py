@@ -11,7 +11,7 @@ def returnFloatArray(x):
         newArray.append(stringToFloat(val))
     return newArray
 
-## Concert each String to a float number
+## Convert each String to a float number
 
 def stringToFloat(number):
     if number != " ":
