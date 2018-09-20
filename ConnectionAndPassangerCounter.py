@@ -12,7 +12,7 @@ notNullSystems = list()
 
 # Find coaches that belong to trains
 for system in r:
-    if system.get('trainNumber') is not None and system.get("trainNumber") != 200:
+    if system.get('trainNumber') is not None and system.get("trainNumber") != 200 and system.get("trainNumber") > 0:
         notNullSystems.append(system)
 
 
@@ -26,10 +26,11 @@ for systems in itertools.groupby(sortedList, operator.itemgetter('trainNumber'))
     passengers = list()
     # Loop through coaches of the train
     for system in systems[1]:
-        mac = system.get("mac").replace(":", "%3A")
+        original_mac = system.get("mac")
+        encoded_mac = original_mac.replace(":", "%3A")
         s = requests.get("https://dbdata.colibri-w.de/api/hackathon/1/system.json?"
                          "params=%7B%22user%22%3A%22innotrans%22%2C%22password%22%3A%22innotrans2018%22%2C%22mac%22%3A%22"
-                         + mac + "%22%7D").json()
+                         + encoded_mac + "%22%7D").json()
 
         # If they have wifi traffic data, save it along with the corresponding months
         for month in s["traffic"]:
@@ -47,7 +48,7 @@ for systems in itertools.groupby(sortedList, operator.itemgetter('trainNumber'))
             end = datetime.datetime(year, month, calendar.monthrange(year, month)[1]).strftime('%s')
             p = requests.get("https://dbdata.colibri-w.de/api/hackathon/1/afz.json?"
                          "params=%7B%22user%22%3A%22innotrans%22%2C%22password%22%3A%22innotrans2018%22%2C%22mac%22%3A%22"
-                         + mac + "%22%2C%22fromTime%22%3A" + start + "%2C%22toTime%22%3A" + end + "%7D").json()
+                         + encoded_mac + "%22%2C%22fromTime%22%3A" + start + "%2C%22toTime%22%3A" + end + "%7D").json()
             for a in p:
                 if isinstance(a, collections.Mapping) and ("sensors" in a.keys()):
                     if a["sensors"] is not None:
@@ -58,10 +59,14 @@ for systems in itertools.groupby(sortedList, operator.itemgetter('trainNumber'))
             passengers.append(passengerCount)
 
         # Log results by train number, more verbose if usable
-        print("Train number: " + str(systems[0]))
+        print("* Train number: " + str(systems[0]) + "\n")
         for index, dp in enumerate(sessionNumbers):
             if passengers[index] != 0 and dp["sessions"] != 0:
-                print(" - Month: " + str(dp["month"]))
-                print(" - Mac: " + str(mac))
-                print(" - Sessions: " + str(dp["sessions"]))
-                print(" - Passengers: " + str(passengers[index]))
+            	print("------------------------------")
+            	print(" - Period: " + str(dp["month"][0:4]) + "/" + dp["month"][4:])
+            	print(" - AP MAC address: " + str(original_mac))
+            	print(" - WiFi sessions established: " + str(dp["sessions"]))
+            	print(" - Passengers onboarded: " + str(passengers[index]))
+            	print("------------------------------")
+            	if index == len(sessionNumbers) - 1:
+            		print("")
